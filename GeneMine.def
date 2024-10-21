@@ -1,0 +1,98 @@
+Bootstrap: docker
+From: debian:latest
+
+%environment
+    # Set up environment variables at runtime
+    export PATH=/usr/local/bin:$PATH
+    export PYTHONUSERBASE=/usr/local
+    export PYTHONNOUSERSITE=1
+    export PIP_BREAK_SYSTEM_PACKAGES=1   # Allow pip to modify system packages
+
+%post
+    # Set up environment variables at runtime
+    export PATH=/usr/local/bin:$PATH
+    export PYTHONUSERBASE=/usr/local
+    export PYTHONNOUSERSITE=1
+    export PIP_BREAK_SYSTEM_PACKAGES=1   # Allow pip to modify system packages
+
+    # Update and install dependencies
+    apt-get update && apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        python3-dev \
+        build-essential \
+        libxml2-dev \
+        libxt-dev \
+        bash \
+        libopenblas-dev \
+        gfortran \
+        libcairo2-dev \
+        libpango1.0-dev \
+        libtiff-dev \
+        libjpeg-dev \
+        git \
+        libzmq3-dev 
+
+     # samtools
+     apt-get install -y --no-install-recommends \
+        samtools
+     # bedops
+     git clone https://github.com/bedops/bedops.git
+     cd bedops
+     make
+     make install
+     cp bin/* /usr/local/bin
+     ## clean up
+     cd ..
+     rm -Rf bedops
+  
+     # Perl module Parallel::ForkManager 
+     apt-get install -y --no-install-recommends \
+        libparallel-forkmanager-perl
+
+
+     pip3 install --upgrade pip
+
+     # argparse
+     pip install argparse
+
+     # and finally the iRead package
+     apt install -y python-is-python3
+
+     git clone https://github.com/stela2502/iReadPackages.git
+     cd iReadPackages/
+     python3 install.py
+     cd ..
+     rm iReadPackages/ -Rf
+
+     rm -rf /var/lib/apt/lists/*
+
+    # Install JupyterLab
+    pip3 install --upgrade pip
+    pip3 install jupyterlab
+
+    # Install R packages
+    # R -e "install.packages('IRkernel', repos='https://cloud.r-project.org')"
+    # R -e "install.packages('pbdZMQ', repos='https://cloud.r-project.org')"  # Install pbdZMQ
+    # R -e "IRkernel::installspec(user = FALSE)"  # Register IRkernel with Jupyter
+
+%runscript
+    exec "jupyter lab --no-browser --ip=0.0.0.0 --allow-root"
+
+%test
+    echo "Running tests inside the container..."
+
+    # Clone the repository
+    git clone https://github.com/genemine/iread.git /tmp/iread_repo || { echo "Failed to clone repo"; exit 1; }
+
+    # Move into the repository directory
+    cd /tmp/iread_repo || { echo "Failed to enter repo directory"; exit 1; }
+
+    # Run the test script using bash
+    bash test_iread.sh || { echo "Test script failed"; exit 1; }
+
+    # Clean up: remove the cloned repository
+    echo "Cleaning up..."
+    rm -rf /tmp/iread_repo || { echo "Failed to clean up repo"; exit 1; }
+
+    echo "Test completed successfully and repository removed."
