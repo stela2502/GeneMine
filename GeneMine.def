@@ -59,6 +59,9 @@ From: debian:latest
      # and finally the iRead package
      apt install -y python-is-python3
 
+     # gtftools
+     pip install gtftools
+
      git clone https://github.com/stela2502/iReadPackages.git
      cd iReadPackages/
      python3 install.py
